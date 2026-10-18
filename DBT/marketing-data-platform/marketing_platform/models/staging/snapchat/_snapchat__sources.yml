@@ -1,0 +1,25 @@
+version: 2
+
+sources:
+  - name: snapchat_ads
+    description: "Raw Snapchat Ads exports loaded as-is (all columns strings) into bronze. One table per export file."
+    database: bronze_production
+    schema: snapchat_ads
+    tables:
+      - name: ads_stats
+        description: "Daily ad performance. Grain: one row per ad_detail_id per ad_date per ad_country."
+        columns:
+          - name: ad_detail_id
+            description: "Snapchat ad identifier (UUID, stored as string). Joins to ads.ad_id."
+          - name: ad_currency_code
+            description: "Currency that ad_spend is reported in."
+          - name: ad_country
+            description: "Country the delivery is attributed to. Collapsed in staging."
+          - name: ad_clicks
+            description: "Clicks. Literal string 'null' when Snapchat reported no value."
+      - name: ads
+        description: "Ad attributes; links ad_id to ad_group_id."
+      - name: ad_groups
+        description: "Ad group (ad squad) names; links ad_group_id to campaign_id."
+      - name: campaigns
+        description: "Campaign names; links campaign_id to account_id."
