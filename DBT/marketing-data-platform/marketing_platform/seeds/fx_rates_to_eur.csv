@@ -1,0 +1,4 @@
+currency_code,rate_year,eur_per_unit,source
+EUR,2024,1.0,identity
+EUR,2025,1.0,identity
+USD,2025,0.884956,ECB 2025 annual average reference rate (1 EUR = 1.1300 USD)

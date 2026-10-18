@@ -40,3 +40,11 @@ models:
     marts:
       +materialized: table
       +schema: marts
+
+seeds:
+  marketing_platform:
+    +schema: reference
+    fx_rates_to_eur:
+      +column_types:
+        rate_year: int
+        eur_per_unit: decimal(18, 6)
