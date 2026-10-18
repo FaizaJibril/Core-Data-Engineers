@@ -1,0 +1,20 @@
+version: 2
+
+models:
+  - name: stg_facebook__ad_stats
+    description: "Typed Facebook daily stats. Grain: one row per ad_id per ad_date."
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: ['ad_id', 'ad_date']
+  - name: stg_snapchat__ad_stats
+    description: "Snapchat daily stats summed across countries. Grain: one row per ad_id per ad_date."
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: ['ad_id', 'ad_date']
+  - name: stg_snapchat__ad_groups
+    description: "Latest version of each Snapchat ad group (source is a history table)."
+    columns:
+      - name: ad_group_id
+        data_tests: [unique, not_null]   # guards the dedup: fails if qualify is removed

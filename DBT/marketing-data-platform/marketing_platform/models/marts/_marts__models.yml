@@ -1,0 +1,100 @@
+version: 2
+
+models:
+  - name: fct_ad_performance_daily
+    description: "Unified Facebook + Snapchat ad performance. {{ doc('grain_fct') }} Additive measures only; ratios live in mart_campaign_performance_daily."
+    data_tests:
+      # suspicious but possible -> warn, don't block
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "clicks <= impressions"
+          config:
+            severity: warn
+      # flags the known rows where 'null' clicks became 0 despite high impressions
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "not (is_clicks_missing and impressions > 1000)"
+          config:
+            severity: warn
+    columns:
+      - name: ad_performance_key
+        description: "Surrogate key: hash of platform, ad_id, ad_date."
+        data_tests: [unique, not_null]
+      - name: campaign_key
+        description: "Foreign key to dim_campaign."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_campaign')
+                field: campaign_key
+      - name: platform
+        description: "Advertising platform, lowercase."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['facebook', 'snapchat']
+      - name: ad_date
+        description: "Calendar day the performance was recorded."
+        data_tests: [not_null]
+      - name: campaign_id
+        description: "Platform-native campaign ID."
+        data_tests: [not_null]
+      - name: currency_code
+        description: "ISO currency of the spend column."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['EUR', 'USD']
+      - name: spend
+        description: "Spend in the original currency_code."
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+      - name: spend_eur
+        description: "{{ doc('spend_eur') }}"
+        data_tests: [not_null]   # catches a currency/year missing from the FX seed
+      - name: impressions
+        description: "Impressions. Source 'null' values stored as 0."
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+      - name: clicks
+        description: "Clicks. Source 'null' values stored as 0; see is_clicks_missing."
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+      - name: is_clicks_missing
+        description: "True when the platform reported no clicks value (Snapchat: for at least one country row) and it was set to 0."
+
+  - name: dim_campaign
+    description: "One row per platform and campaign, with the campaign name."
+    columns:
+      - name: campaign_key
+        description: "Surrogate key: hash of platform and campaign_id. Platform included because IDs from two systems could collide."
+        data_tests: [unique, not_null]
+      - name: campaign_name
+        description: "Campaign name as set in the ad platform."
+
+  - name: mart_campaign_performance_daily
+    description: "Ready-to-query campaign performance for analysts, BI and AI agents. Grain: one row per platform, campaign and day. Facebook data covers 2025 and Snapchat covers 2024, so same-period platform comparisons are not possible with the current data."
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: ['ad_date', 'platform', 'campaign_key']
+    columns:
+      - name: spend_eur
+        description: "{{ doc('spend_eur') }}"
+      - name: ctr
+        description: "{{ doc('ctr') }}"
+      - name: cpc_eur
+        description: "{{ doc('cpc_eur') }}"
+      - name: cpm_eur
+        description: "{{ doc('cpm_eur') }}"
+      - name: active_ads
+        description: "Distinct ads with a stats row for this campaign on this day."
