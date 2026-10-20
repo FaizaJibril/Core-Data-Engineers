@@ -1,0 +1,40 @@
+name: dbt Prod Deploy (marketing platform)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "DBT/marketing-data-platform/**"
+  schedule:
+    - cron: "0 6 * * *"      # daily refresh, 06:00 UTC
+  workflow_dispatch:          # manual run button
+
+concurrency:
+  group: dbt-prod
+  cancel-in-progress: false
+
+jobs:
+  dbt-prod:
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        working-directory: DBT/marketing-data-platform/marketing_platform
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_HTTP_PATH: ${{ secrets.DATABRICKS_HTTP_PATH }}
+      # Token owned by the Service Principal (Free Edition blocks OAuth M2M; see NOTES.md).
+      # Lives only in the "production" environment, so pull request jobs can't read it.
+      DATABRICKS_SP_TOKEN: ${{ secrets.DATABRICKS_SP_TOKEN }}
+      DBT_PROFILES_DIR: .
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install -r ../requirements.txt
+      - run: dbt deps
+      - name: Build and test in production (Service Principal)
+        run: dbt build --target prod
