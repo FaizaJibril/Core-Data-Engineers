@@ -15,3 +15,21 @@
   - **No `MODIFY` on `production`.** The Service Principal creates its own schemas and tables there, which makes it their owner, and owners already have full rights on what they own.
 - The Service Principal also needs **Can use** on the SQL warehouse; without it, no query runs regardless of data grants.
 - `data_tests:` (dbt 1.10+) is used instead of `tests:` to distinguish data tests, which check real data, from unit tests, which check SQL logic against mock data.
+
+## Materializations
+
+- Staging: views (rename and cast only; free to store, always fresh).
+- `int_facebook__ad_performance` / `int_snapchat__ad_performance`: ephemeral, since each is used once, by `int_ads__unioned`.
+- `int_ads__unioned`: view, kept queryable for debugging reconciliation gaps.
+- `fct_ad_performance_daily`: incremental `merge` on `ad_performance_key`, re-merging a 3-day lookback window per platform (`var('fct_lookback_days')`), because platforms restate recent days. `on_schema_change='fail'`, and schema changes go through `--full-refresh`.
+- `dim_campaign`, `mart_campaign_performance_daily`: tables, small and queried often.
+
+## Observability
+
+- Elementary package and CLI pinned to the same version (0.26.0); results land in each environment's `elementary` schema.
+- `volume_anomalies` and `schema_changes` on the fact table, severity warn; they need a few runs of history before they can flag anomalies.
+- CI and prod upload the static dbt docs and the Elementary report as artifacts on every run, failed runs included.
+
+## Consumer access
+
+- Consumers (`account users`) get `USE CATALOG` on `production` (one-time grant, `databricks/03_unity_catalog_grants.sql`), plus `USE SCHEMA` + `SELECT` on `marts` only, which dbt grants at the end of every prod run (`macros/grant_marts_read_access.sql`). Staging and intermediate stay internal.

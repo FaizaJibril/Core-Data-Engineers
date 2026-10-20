@@ -1,3 +1,5 @@
+{{ config(materialized='ephemeral') }}
+
 with stats as (
     select * from {{ ref('stg_snapchat__ad_stats') }}
 ),

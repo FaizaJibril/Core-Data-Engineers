@@ -40,6 +40,13 @@ models:
       +materialized: table
       +schema: marts
 
+  # Elementary's own models (test results, run history) live in their own schema.
+  elementary:
+    +schema: elementary
+
+on-run-end:
+  - "{{ grant_marts_read_access() }}"
+
 seeds:
   marketing_platform:
     +schema: reference
