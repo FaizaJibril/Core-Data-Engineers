@@ -1,0 +1,32 @@
+marketing_platform:
+  target: dev
+  outputs:
+    dev:
+      type: databricks
+      host: "{{ env_var('DATABRICKS_HOST') }}"
+      http_path: "{{ env_var('DATABRICKS_HTTP_PATH') }}"
+      token: "{{ env_var('DATABRICKS_TOKEN') }}"
+      catalog: dev
+      schema: dbt_faiza
+      threads: 4
+
+    ci:
+      type: databricks
+      host: "{{ env_var('DATABRICKS_HOST') }}"
+      http_path: "{{ env_var('DATABRICKS_HTTP_PATH') }}"
+      token: "{{ env_var('DATABRICKS_TOKEN') }}"
+      catalog: ci_development
+      schema: "{{ env_var('DBT_CI_SCHEMA', 'ci') }}"
+      threads: 4
+
+    # Runs as the Service Principal. Free Edition refuses OAuth M2M scopes, so this uses a
+    # token owned by the Service Principal (see NOTES.md). On a paid workspace, replace the
+    # token line with: auth_type: oauth, client_id and client_secret from env vars.
+    prod:
+      type: databricks
+      host: "{{ env_var('DATABRICKS_HOST') }}"
+      http_path: "{{ env_var('DATABRICKS_HTTP_PATH') }}"
+      token: "{{ env_var('DATABRICKS_SP_TOKEN') }}"
+      catalog: production
+      schema: analytics
+      threads: 4
