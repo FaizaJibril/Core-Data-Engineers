@@ -16,6 +16,15 @@ models:
             expression: "not (is_clicks_missing and impressions > 1000)"
           config:
             severity: warn
+      # Elementary observability: these learn from the history of previous runs.
+      # Row count jumps or drops (a lost source file, a fan-out join) -> warn.
+      - elementary.volume_anomalies:
+          config:
+            severity: warn
+      # A column added, dropped or retyped upstream -> warn before consumers break.
+      - elementary.schema_changes:
+          config:
+            severity: warn
     columns:
       - name: ad_performance_key
         description: "Surrogate key: hash of platform, ad_id, ad_date."

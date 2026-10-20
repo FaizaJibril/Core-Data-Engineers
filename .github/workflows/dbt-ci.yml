@@ -40,10 +40,17 @@ jobs:
         run: dbt build --target ci
 
       - name: Generate docs
-        run: dbt docs generate --target ci
+        run: dbt docs generate --target ci --static
 
-      - name: Upload docs
+      - name: Elementary report
+        if: always()   # most useful exactly when the build failed
+        run: edr report --profiles-dir . --project-dir . --profile-target ci --file-path elementary_report.html --open-browser false
+
+      - name: Upload docs and Elementary report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: dbt-docs
-          path: DBT/marketing-data-platform/marketing_platform/target/
+          name: dbt-docs-and-elementary
+          path: |
+            DBT/marketing-data-platform/marketing_platform/target/static_index.html
+            DBT/marketing-data-platform/marketing_platform/elementary_report.html
